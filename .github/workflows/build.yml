@@ -1,0 +1,86 @@
+name: Build WinSCP
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Build platform'
+        required: false
+        default: 'Win32'
+        type: choice
+        options:
+          - Win32
+          - Win64
+
+jobs:
+  build:
+    name: Build (${{ github.event.inputs.platform || 'Win32' }})
+    runs-on: [self-hosted, windows]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set platform
+        id: platform
+        shell: cmd
+        run: |
+          if "${{ github.event.inputs.platform }}"=="" (
+            echo PLATFORM=Win32>> %GITHUB_ENV%
+          ) else (
+            echo PLATFORM=${{ github.event.inputs.platform }}>> %GITHUB_ENV%
+          )
+
+      - name: Build WinSCP
+        shell: cmd
+        run: call build.bat %PLATFORM%
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinSCP-${{ env.PLATFORM }}-${{ github.sha }}
+          path: |
+            source/WinSCP.exe
+            source/WinSCP.com
+            source/WinSCPnet.dll
+            source/DragExt64.dll
+          if-no-files-found: warn
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: [self-hosted, windows]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: WinSCP-*-${{ github.sha }}
+          merge-multiple: true
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: WinSCP ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/WinSCP.exe
+            artifacts/WinSCP.com
+            artifacts/WinSCPnet.dll
+            artifacts/DragExt64.dll
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
