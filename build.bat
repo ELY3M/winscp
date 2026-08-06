@@ -1,7 +1,7 @@
 @echo off
 rem See 'readme.md' file
 
-setlocal
+setlocal enabledelayedexpansion
 
 set PLATFORM=%1
 if "%PLATFORM%" == "" set PLATFORM=Win32
@@ -30,7 +30,22 @@ set MSBUILD_COMMUNITY=%PROGRAMFILES64%\%VS_PATH_REL%\Community\%MSBUILD_REL%
 set MSBUILD=%MSBUILD_COMMUNITY%
 rem Visual Studio 2022 Build Tools (build server)
 if not exist "%MSBUILD%" set MSBUILD=%PROGRAMFILES32%\%VS_PATH_REL%\BuildTools\%MSBUILD_REL%
-if not exist "%MSBUILD%" echo Cannot find MSBUILD (%MSBUILD%, %MSBUILD_COMMUNITY%), install Build Tools for Visual Studio 2022 & exit /B 1
+rem Visual Studio Enterprise 2022 (CI runner)
+if not exist "%MSBUILD%" set MSBUILD=%PROGRAMFILES64%\%VS_PATH_REL%\Enterprise\%MSBUILD_REL%
+rem Try vswhere to locate MSBuild (any edition)
+if not exist "!MSBUILD!" (
+  set VSWHERE=%PROGRAMFILES32%\Microsoft Visual Studio\Installer\vswhere.exe
+  if exist "!VSWHERE!" (
+    for /f "usebackq tokens=*" %%i in (`"!VSWHERE!" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) do set MSBUILD=%%i
+  )
+)
+rem Try PATH (e.g. set up by microsoft/setup-msbuild action)
+if not exist "!MSBUILD!" (
+  for /f "usebackq tokens=*" %%i in (`where msbuild 2^>nul`) do (
+    if not exist "!MSBUILD!" set MSBUILD=%%i
+  )
+)
+if not exist "!MSBUILD!" echo Cannot find MSBUILD (!MSBUILD!, %MSBUILD_COMMUNITY%), install Build Tools for Visual Studio 2022 & exit /B 1
 
 set WITH_DOTNET=1
 if "%BUILD_TARGET%"=="" set BUILD_TARGET=Build
