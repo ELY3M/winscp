@@ -32,24 +32,33 @@ jobs:
         shell: cmd
         run: |
           if "${{ github.event.inputs.platform }}"=="" (
-            echo PLATFORM=Win32>> %GITHUB_ENV%
+            echo PLATFORM=Win64>> %GITHUB_ENV%
           ) else (
             echo PLATFORM=${{ github.event.inputs.platform }}>> %GITHUB_ENV%
           )
 
-      - name: Build WinSCP
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore .NET dependencies
         shell: cmd
-        run: call build.bat %PLATFORM%
+        working-directory: dotnet
+        run: dotnet restore WinSCPnet.csproj
+
+      - name: Build WinSCPnet (.NET wrapper)
+        shell: cmd
+        working-directory: dotnet
+        run: dotnet build WinSCPnet.csproj -c Release --no-restore
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: WinSCP-${{ env.PLATFORM }}-${{ github.sha }}
           path: |
-            source/WinSCP.exe
-            source/WinSCP.com
-            source/WinSCPnet.dll
-            source/DragExt64.dll
+            dotnet/bin/Release/net40/WinSCPnet.dll
+            dotnet/bin/Release/netstandard2.0/WinSCPnet.dll
           if-no-files-found: warn
           retention-days: 30
 
