@@ -51,6 +51,9 @@ jobs:
         shell: cmd
         working-directory: dotnet
         run: dotnet build WinSCPnet.csproj -c Release --no-restore
+        
+      - name: list all dirs 
+        run: ls -R        
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
