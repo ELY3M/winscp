@@ -42,17 +42,23 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Restore .NET dependencies
+        shell: cmd
+        working-directory: dotnet
+        run: dotnet restore WinSCPnet.csproj
+
       - name: Build WinSCPnet (.NET wrapper)
         shell: cmd
         working-directory: dotnet
-        run: dotnet build WinSCPnet.csproj -c Release
+        run: dotnet build WinSCPnet.csproj -c Release --no-restore
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: WinSCP-${{ env.PLATFORM }}-${{ github.sha }}
           path: |
-            dotnet/bin/Release/**/*.dll
+            dotnet/bin/Release/net40/WinSCPnet.dll
+            dotnet/bin/Release/netstandard2.0/WinSCPnet.dll
           if-no-files-found: warn
           retention-days: 30
 
