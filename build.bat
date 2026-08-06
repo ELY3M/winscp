@@ -34,9 +34,9 @@ rem Visual Studio Enterprise 2022 (CI runner)
 if not exist "%MSBUILD%" set MSBUILD=%PROGRAMFILES64%\%VS_PATH_REL%\Enterprise\%MSBUILD_REL%
 rem Try vswhere to locate MSBuild (any edition)
 if not exist "!MSBUILD!" (
-  set VSWHERE=%PROGRAMFILES32%\Microsoft Visual Studio\Installer\vswhere.exe
+  set "VSWHERE=%PROGRAMFILES32%\Microsoft Visual Studio\Installer\vswhere.exe"
   if exist "!VSWHERE!" (
-    for /f "usebackq tokens=*" %%i in (`"!VSWHERE!" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) do set MSBUILD=%%i
+    for /f "usebackq tokens=*" %%i in (`"!VSWHERE!" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) do set "MSBUILD=%%i"
   )
 )
 rem Try PATH (e.g. set up by microsoft/setup-msbuild action)
